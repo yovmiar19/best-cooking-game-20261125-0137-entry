@@ -5,7 +5,9 @@ import { pick, range } from './random.js';
 
 let orderCounter = 0;
 
-export function createOrder(rng, day, now) {
+const CUSTOMERS = ['Budi', 'Sari', 'Agus', 'Dewi', 'Rina', 'Joko', 'Maya', 'Andi'];
+
+export function createOrder(rng, day, now, existing = []) {
   orderCounter += 1;
   const recipeId = pick(rng, RECIPE_IDS);
   const recipe = RECIPES[recipeId];
@@ -14,6 +16,11 @@ export function createOrder(rng, day, now) {
     GAME.orderTimeMin,
     GAME.orderTimeBase * (1 - rush) + range(rng, -4, 6),
   );
+  let customer = pick(rng, CUSTOMERS);
+  // Avoid a board that reads as duplicated: same dish + same customer twice.
+  while (existing.some((o) => o.recipeId === recipeId && o.customer === customer)) {
+    customer = pick(rng, CUSTOMERS);
+  }
   return {
     id: orderCounter,
     recipeId,
@@ -24,7 +31,7 @@ export function createOrder(rng, day, now) {
     timeLeft: timeLimit,
     timeLimit,
     createdAt: now,
-    customer: pick(rng, ['Budi', 'Sari', 'Agus', 'Dewi', 'Rina', 'Joko', 'Maya', 'Andi']),
+    customer,
   };
 }
 
@@ -53,7 +60,7 @@ export class OrderBoard {
     }
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0 && this.orders.length < GAME.orderSlots) {
-      const order = createOrder(this.rng, day, now);
+      const order = createOrder(this.rng, day, now, this.orders);
       this.orders.push(order);
       if (onSpawn) onSpawn(order);
       const gap = range(this.rng, GAME.orderGapMin, GAME.orderGapMax);

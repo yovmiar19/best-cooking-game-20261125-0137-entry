@@ -1,7 +1,7 @@
 // Sizzle & Serve: Warung Rush — bootstrap, game loop, and the rules glue.
 // One job: own the screens (title / play / pause / over), the day clock, the
 // combo, and the E-key interaction that ties stations, plate and orders together.
-import { GAME, INGREDIENTS, RECIPES, STATIONS } from './config.js';
+import { COMBO_BONUS, GAME, INGREDIENTS, RECIPES, STATIONS } from './config.js';
 import { makeRng, parseSeed } from './random.js';
 import { SoundBank } from './audio.js';
 import { Kitchen } from './kitchen.js';
@@ -40,6 +40,7 @@ export class Game {
     this.elapsed = 0;
     this.shotMode = this.query.get('shot');
     this.shotStaged = false;
+    this.kitchen.shotMode = !!this.shotMode;
     this.bindUi();
     this.resetWorld();
     if (this.shotMode) {
@@ -48,6 +49,7 @@ export class Game {
       this.applyScreen();
     } else {
       this.hud.showTitle();
+      this.kitchen.waving = true;
     }
     requestAnimationFrame((t) => this.loop(t));
   }
@@ -91,10 +93,14 @@ export class Game {
     this.bestCombo = 1;
     this.elapsed = 0;
     this.hudTimer = 0;
+    this.servedByRecipe = { nasi: 0, mie: 0, sate: 0 };
+    this.speedBonusTotal = 0;
     this.kitchen.setPlateContents([]);
     this.kitchen.setCarried(null);
     this.kitchen.clearWorkTarget();
     this.kitchen.setCooking(false);
+    this.kitchen.setShutter(false);
+    this.hud.hideServePop();
     this.hud.setScore(0, 0);
     this.hud.setLives(this.lives);
     this.hud.setCombo(0);
@@ -108,6 +114,7 @@ export class Game {
     this.sound.startMusic();
     this.sound.click();
     this.resetWorld();
+    this.kitchen.waving = false;
     this.screen = SCREEN_PLAY;
     this.applyScreen();
     this.hud.toast('Hari 1 dimulai! Ambil bahan, masak, sajikan! 🍳');
@@ -129,6 +136,8 @@ export class Game {
     else if (this.screen === SCREEN_OVER) { /* stats set by gameOver() */ }
     else this.hud.hideOverlays();
     if (this.screen !== SCREEN_PAUSE) this.hud.showPause(false);
+    // The chef waves at the camera on the title screen.
+    this.kitchen.waving = this.screen === SCREEN_TITLE;
   }
 
   gameOver() {
@@ -137,10 +146,32 @@ export class Game {
     this.sound.gameOver();
     this.kitchen.setCooking(false);
     this.kitchen.clearWorkTarget();
+    // The warung pulls its shutter halfway down.
+    this.kitchen.setShutter(true);
+    const stars = this.score >= 400 ? 3 : this.score >= 200 ? 2 : 1;
+    const rank = stars === 3 ? 'Juragan Warung' : stars === 2 ? 'Koki Andal' : 'Pemula Dapur';
+    const starRow = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+    let best = 0;
+    try { best = Number(window.localStorage.getItem('warung-best-score')) || 0; } catch (e) { /* storage unavailable */ }
+    const isNewBest = this.score > 0 && (this.score > best || !!this.shotMode);
+    if (!this.shotMode && this.score > best) {
+      try { window.localStorage.setItem('warung-best-score', String(this.score)); } catch (e) { /* ignore */ }
+    }
+    const recipeRows = Object.values(RECIPES).map((r) => {
+      const n = this.servedByRecipe[r.id] || 0;
+      return `<div class="stat-row"><span>${r.emoji} ${r.name}</span><b>${n} porsi</b></div>`;
+    }).join('');
     const stats = `
-      <div>Skor akhir: <b>${this.score}</b></div>
-      <div>Koin: <b>${this.coins}</b> • Pesanan tersaji: <b>${this.board.servedCount}</b></div>
-      <div>Hari tercapai: <b>${this.day}</b> • Kombo terbaik: <b>x${this.bestCombo || 1}</b></div>
+      <div class="stat-stars">${starRow}</div>
+      <div><span class="rank-badge">🏅 ${rank}</span></div>
+      <div style="font-size:22px">Skor akhir: <b>${this.score}</b>${isNewBest ? '<span class="new-best">★ NEW BEST!</span>' : ''}</div>
+      <div class="over-divider"></div>
+      ${recipeRows}
+      <div class="stat-row"><span>🪙 Total koin</span><b>${this.coins}</b></div>
+      <div class="stat-row"><span>⚡ Bonus kecepatan</span><b>+${this.speedBonusTotal} koin</b></div>
+      <div class="stat-row"><span>🔥 Kombo terbaik</span><b>x${this.bestCombo || 1}</b></div>
+      <div class="stat-row"><span>📋 Pesanan tersaji</span><b>${this.board.servedCount}</b></div>
+      <div class="stat-row"><span>🌅 Hari tercapai</span><b>${this.day}</b></div>
       <p class="over-tip">Tip: sajikan cepat berturut-turut untuk kombo, dan jangan biarkan pesanan kedaluwarsa!</p>`;
     this.hud.showGameOver(stats);
   }
@@ -173,7 +204,7 @@ export class Game {
       this.player.startWork(station, carried.ingredient, want, duration);
       this.kitchen.setWorkTarget(carried.ingredient, station);
       if (want === 'stove') { this.kitchen.setCooking(true); this.sound.sizzleStart(); }
-      else this.sound.chop();
+      else { this.sound.chop(); this.kitchen.burstChop(); }
       this.hud.showWork(want === 'board' ? `Memotong ${INGREDIENTS[carried.ingredient].name}…` : `Memasak ${INGREDIENTS[carried.ingredient].name}…`, 0);
       return;
     }
@@ -214,19 +245,29 @@ export class Game {
         return;
       }
       const served = this.board.serve(order, this.elapsed);
-      const comboBonus = this.combo > 0 ? this.combo * GAME.COMBO_BONUS : 0;
+      const comboBonus = this.combo > 0 ? this.combo * COMBO_BONUS : 0;
       const total = served.coins + comboBonus;
       this.score += total;
       this.coins += total;
       this.combo += 1;
       this.bestCombo = Math.max(this.bestCombo || 1, this.combo);
       this.comboTimer = GAME.comboWindowSeconds;
+      this.servedByRecipe[order.recipeId] = (this.servedByRecipe[order.recipeId] || 0) + 1;
+      this.speedBonusTotal += served.speedBonus;
       this.plate.reset();
       this.kitchen.setPlateContents([]);
       this.sound.serve();
       this.sound.coin();
       this.hud.setScore(this.score, this.coins);
       this.hud.setCombo(this.combo);
+      // Serve celebration: floating popup, gold sparkles, coins flying
+      // from the serve window toward the coin counter.
+      const parts = [`+${total}`];
+      if (this.combo > 1) parts.push(`KOMBO x${this.combo}`);
+      if (served.speedBonus > 0) parts.push('SPEED BONUS');
+      this.hud.showServePop(parts.join(' · '), !!this.shotMode);
+      this.kitchen.burstServe();
+      this.hud.spawnCoins(this.kitchen.worldToScreen(4.6, 1.3, 2.6), !!this.shotMode);
       this.hud.toast(`✅ ${order.name} disajikan! +${total} koin${comboBonus ? ` (kombo +${comboBonus})` : ''} — ${order.customer} senang!`);
       return;
     }

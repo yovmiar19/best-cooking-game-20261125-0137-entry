@@ -20,6 +20,7 @@
   .brand small { display: block; font-size: 11px; color: #ffe8c2; letter-spacing: 2px; }
   .pill { background: rgba(20,12,6,0.78); border: 2px solid #e4572e; border-radius: 999px;
     padding: 6px 14px; font-size: 16px; font-weight: 800; white-space: nowrap; }
+  .pill .life.lost { opacity: 0.3; filter: grayscale(1); }
   .pill.urgent { border-color: #ff1744; color: #ff8a80; animation: pulse 0.7s infinite alternate; }
   #combo { border-color: #ffb300; color: #ffd54f; }
   #combo.hot { animation: pulse 0.4s infinite alternate; }
@@ -49,7 +50,7 @@
   .plate-line { background: rgba(46,125,107,0.92); padding: 8px 12px; border-radius: 10px;
     font-size: 14px; font-weight: 700; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
 
-  #carried { position: absolute; bottom: 64px; left: 12px; background: rgba(20,12,6,0.78);
+  #carried { position: absolute; top: 64px; right: 12px; background: rgba(20,12,6,0.78);
     border: 2px solid #ffd54f; border-radius: 999px; padding: 8px 16px; font-size: 16px; font-weight: 800; }
   #hint { position: absolute; bottom: 16px; left: 12px; right: 12px; text-align: center;
     font-size: 15px; font-weight: 700; text-shadow: 0 2px 4px #000;
@@ -59,6 +60,33 @@
     padding: 12px 22px; font-size: 19px; font-weight: 800; text-align: center;
     opacity: 0; transition: opacity 0.2s, transform 0.2s; max-width: 80%; }
   #toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+  /* Serve popup: big gold "+200 · KOMBO x3 · SPEED BONUS" under the topbar. */
+  #score-pop { position: absolute; top: 66px; left: 50%; transform: translate(-50%, -12px) scale(0.9);
+    background: linear-gradient(180deg, #fff8e1, #ffe082); color: #bf360c; border: 3px solid #ff8f00;
+    border-radius: 999px; padding: 10px 22px; font-size: 24px; font-weight: 900;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.25s, transform 0.25s;
+    white-space: nowrap; z-index: 6; }
+  #score-pop.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+  /* Coins flying from the serve window to the coin counter. */
+  #coins-layer { position: fixed; inset: 0; pointer-events: none; z-index: 6; }
+  .fly-coin { position: fixed; font-size: 24px; z-index: 6; animation: coin-fly 0.9s ease-in forwards; }
+  @keyframes coin-fly {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    60% { transform: translate(calc(var(--dx) * 0.6), calc(var(--dy) * 0.6 - 90px)) scale(1.15); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0.55); opacity: 0.15; }
+  }
+
+  /* Order tickets: paper-ticket look, big dish picture, ingredient dots. */
+  .order-card { border-radius: 12px 12px 4px 4px; }
+  .order-emoji { font-size: 30px; }
+  .order-customer { margin: 2px 0 4px; }
+  .order-ingredients { display: flex; gap: 6px; margin: 2px 0 7px; }
+  .ing-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(62,39,35,0.55);
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15); }
+  .order-bar { height: 12px; }
+  .order-card::after { content: ""; display: block; margin: 7px -12px -9px; border-top: 2px dashed #d7ccc8; }
 
   #work-progress { position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%);
     width: 320px; background: rgba(20,12,6,0.8); border-radius: 12px; padding: 10px 14px;
@@ -70,24 +98,52 @@
 
   .overlay { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center;
     justify-content: center; background: rgba(20,12,6,0.72); backdrop-filter: blur(2px); }
+  /* Title / game-over overlays let the 3D warung scene show through. */
+  .overlay-scene { background: rgba(20,12,6,0.45); backdrop-filter: none; }
+  .overlay-dim { background: rgba(20,12,6,0.4); backdrop-filter: none; }
+  /* Title panel sits on the left so the waving chef and the warung show
+     on the right — a scene, not a centred menu. */
+  #screen-title { justify-content: flex-start; padding-left: 40px; }
+  #screen-title .panel { max-width: 520px; }
   .overlay.hidden { display: none; }
-  .panel { background: linear-gradient(160deg, #fff3e0, #ffe0b2); color: #3e2723; border-radius: 20px;
+  .panel { background: linear-gradient(160deg, rgba(255,243,224,0.97), rgba(255,224,178,0.97)); color: #3e2723; border-radius: 20px;
     padding: 30px 36px; max-width: 560px; width: calc(100% - 40px); text-align: center;
-    border: 4px solid #e4572e; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+    border: 4px solid #e4572e;
+    /* Batik-inspired frame: concentric gold / teal / terracotta bands. */
+    box-shadow: 0 0 0 5px #ffd54f, 0 0 0 9px #2e7d6b, 0 0 0 13px #e4572e, 0 20px 60px rgba(0,0,0,0.6); }
   .panel h1 { font-size: 40px; color: #bf360c; line-height: 1.05; }
   .panel h1 .flame { font-size: 46px; }
+  /* The title as a bold painted shop sign, slightly tilted. */
+  .panel h1.sign { background: #bf360c; color: #ffe8c2; border: 4px solid #7a2e0e; border-radius: 14px;
+    padding: 12px 10px; transform: rotate(-1deg); text-shadow: 0 3px 0 rgba(0,0,0,0.35);
+    box-shadow: 0 6px 0 rgba(0,0,0,0.25); }
+  .panel h1.sign .flame { text-shadow: none; }
   .panel h2 { font-size: 30px; color: #bf360c; }
   .panel p { margin: 12px 0; font-size: 16px; line-height: 1.5; }
   .recipes { display: flex; gap: 10px; justify-content: center; margin: 14px 0; flex-wrap: wrap; }
-  .recipe-chip { background: #fff; border: 2px solid #2e7d6b; border-radius: 12px; padding: 8px 12px;
+  /* Dishes served on banana leaves: leaf-green chips, big dish emoji. */
+  .recipe-chip { background: linear-gradient(160deg, #558b2f, #33691e); border: 2px solid #c5e1a5;
+    color: #f1f8e9; border-radius: 12px; padding: 8px 12px;
     font-size: 13px; font-weight: 700; line-height: 1.4; }
-  .recipe-chip b { display: block; font-size: 22px; }
-  .big-btn { pointer-events: auto; cursor: pointer; font-size: 20px; font-weight: 900;
-    background: #e4572e; color: #fff; border: none; border-radius: 999px; padding: 14px 38px;
-    margin-top: 10px; box-shadow: 0 6px 0 #7a2e0e; }
-  .big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #7a2e0e; }
+  .recipe-chip b { display: block; font-size: 30px; }
+  .big-btn { pointer-events: auto; cursor: pointer; font-size: 24px; font-weight: 900;
+    background: #e4572e; color: #fff; border: none; border-radius: 999px; padding: 18px 46px;
+    margin-top: 10px; box-shadow: 0 6px 0 #7a2e0e; animation: btn-pulse 1.6s infinite; }
+  @keyframes btn-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+  .big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #7a2e0e; animation: none; }
   .controls { font-size: 13px; color: #6d4c41; margin-top: 14px; line-height: 1.6; }
   #over-stats { font-size: 18px; line-height: 1.7; margin: 10px 0; }
+  /* Results card: per-recipe rows, stars, rank badge, NEW BEST tag. */
+  #screen-over .panel { max-width: 620px; }
+  .stat-row { display: flex; justify-content: space-between; gap: 8px; font-size: 17px; padding: 3px 6px; text-align: left; }
+  .stat-row b { color: #bf360c; }
+  .stat-stars { font-size: 34px; letter-spacing: 4px; margin: 2px 0; }
+  .rank-badge { display: inline-block; background: #2e7d6b; color: #fff; font-weight: 900; font-size: 18px;
+    border-radius: 999px; padding: 6px 18px; margin: 6px 0; }
+  .new-best { display: inline-block; background: linear-gradient(180deg, #ffd54f, #ff8f00); color: #4e342e;
+    font-weight: 900; font-size: 14px; border-radius: 999px; padding: 4px 12px; margin-left: 8px;
+    vertical-align: middle; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .over-divider { border-top: 2px dashed #bcaaa4; margin: 10px 0; }
   .over-tip { font-size: 14px; color: #6d4c41; }
   kbd { background: #3e2723; color: #ffd54f; border-radius: 5px; padding: 1px 7px; font-weight: 800; }
 </style>
@@ -101,7 +157,7 @@
     <div class="pill" id="day-time">Hari 1 • 2:30</div>
     <div class="pill">⭐ Skor <span id="score">0</span></div>
     <div class="pill">🪙 <span id="coins">0 koin</span></div>
-    <div class="pill" id="lives">❤️❤️❤️</div>
+    <div class="pill" id="lives">🌶️🌶️🌶️</div>
     <div class="pill" id="combo"></div>
     <div class="spacer"></div>
     <button id="btn-sound">🔊 Suara: ON</button>
@@ -114,12 +170,14 @@
   <div id="carried">🤲 Tangan kosong</div>
   <div id="work-progress"><div id="work-label">Memasak…</div><div id="work-bar"><div id="work-fill"></div></div></div>
   <div id="toast"></div>
+  <div id="score-pop"></div>
+  <div id="coins-layer"></div>
   <div id="hint">WASD / panah: bergerak — E: pakai stasiun</div>
 </div>
 
-<div class="overlay" id="screen-title">
+<div class="overlay overlay-scene" id="screen-title">
   <div class="panel">
-    <h1><span class="flame">🔥</span> SIZZLE &amp; SERVE <span class="flame">🔥</span><br>WARUNG RUSH</h1>
+    <h1 class="sign"><span class="flame">🔥</span> SIZZLE &amp; SERVE <span class="flame">🔥</span><br>WARUNG RUSH</h1>
     <p>Kamu juru masak warung kaki lima! Pelanggan memesan, kamu berlari:
     ambil bahan di rak, potong di talenan, masak di kompor, susun di piring,
     dan sajikan sebelum waktu habis. Tiga pesanan kedaluwarsa dan warung tutup!</p>
@@ -144,7 +202,7 @@
   </div>
 </div>
 
-<div class="overlay hidden" id="screen-over">
+<div class="overlay hidden overlay-dim" id="screen-over">
   <div class="panel">
     <h2>🌙 WARUNG TUTUP</h2>
     <p>Tiga pesanan kedaluwarsa — pelanggan pulang kecewa.</p>

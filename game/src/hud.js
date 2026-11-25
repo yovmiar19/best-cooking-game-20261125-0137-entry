@@ -14,6 +14,8 @@ export class Hud {
     this.carriedEl = document.getElementById('carried');
     this.hintEl = document.getElementById('hint');
     this.toastEl = document.getElementById('toast');
+    this.scorePopEl = document.getElementById('score-pop');
+    this.coinsLayerEl = document.getElementById('coins-layer');
     this.progressEl = document.getElementById('work-progress');
     this.progressFill = document.getElementById('work-fill');
     this.progressLabel = document.getElementById('work-label');
@@ -22,6 +24,7 @@ export class Hud {
     this.overEl = document.getElementById('screen-over');
     this.overStats = document.getElementById('over-stats');
     this.toastTimer = null;
+    this.scorePopTimer = null;
   }
 
   setScore(score, coins) {
@@ -38,7 +41,9 @@ export class Hud {
   }
 
   setLives(lives) {
-    this.livesEl.textContent = '❤️'.repeat(Math.max(0, lives)) + '🤍'.repeat(Math.max(0, 3 - lives));
+    // Lives are chili icons: a lost life is a greyed-out chili.
+    this.livesEl.innerHTML = [0, 1, 2].map((i) =>
+      `<span class="life${i < lives ? '' : ' lost'}">🌶️</span>`).join('');
   }
 
   setCombo(combo) {
@@ -61,13 +66,19 @@ export class Hud {
       const pct = Math.max(0, (order.timeLeft / order.timeLimit) * 100);
       const urgent = order.timeLeft <= 12;
       card.classList.toggle('urgent', urgent);
-      const steps = order.steps.map((id) => INGREDIENTS[id].name).join(' + ');
+      // Countdown bar: green -> amber -> red as the order runs out.
+      const fillColor = pct > 50 ? '#43a047' : pct > 25 ? '#fb8c00' : '#e53935';
+      const dots = order.steps.map((id) => {
+        const hex = `#${INGREDIENTS[id].color.toString(16).padStart(6, '0')}`;
+        return `<span class="ing-dot" style="background:${hex}" title="${INGREDIENTS[id].name}"></span>`;
+      }).join('');
       card.innerHTML = `
         <div class="order-head"><span class="order-emoji">${order.emoji}</span>
         <span class="order-name">${order.name}</span>
         <span class="order-price">${order.price} koin</span></div>
-        <div class="order-customer">${order.customer} • ${steps}</div>
-        <div class="order-bar"><div class="order-fill" style="width:${pct}%"></div></div>
+        <div class="order-customer">${order.customer}</div>
+        <div class="order-ingredients">${dots}</div>
+        <div class="order-bar"><div class="order-fill" style="width:${pct}%;background:${fillColor}"></div></div>
         <div class="order-time">${Math.ceil(order.timeLeft)} dtk</div>`;
       this.ordersEl.appendChild(card);
     }
@@ -92,6 +103,50 @@ export class Hud {
     this.toastEl.classList.add('show');
     clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => this.toastEl.classList.remove('show'), ms);
+  }
+
+  // Big floating serve popup ("+200 · KOMBO x3 · SPEED BONUS"). Sticky in
+  // shot mode so the screenshot catches it; otherwise it fades in ~1.8 s.
+  showServePop(text, sticky = false) {
+    this.scorePopEl.textContent = text;
+    this.scorePopEl.classList.add('show');
+    clearTimeout(this.scorePopTimer);
+    if (!sticky) this.scorePopTimer = setTimeout(() => this.scorePopEl.classList.remove('show'), 1800);
+  }
+
+  hideServePop() {
+    this.scorePopEl.classList.remove('show');
+    clearTimeout(this.scorePopTimer);
+  }
+
+  // Coins flying from the serve window toward the coin counter. In shot
+  // mode they freeze mid-flight (removed after 30 s so the scene stays clean).
+  spawnCoins(from, frozen = false) {
+    const pill = this.coinsEl.closest('.pill');
+    if (!pill || !this.coinsLayerEl) return;
+    const r = pill.getBoundingClientRect();
+    const to = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    for (let i = 0; i < 6; i += 1) {
+      const coin = document.createElement('span');
+      coin.className = 'fly-coin';
+      coin.textContent = '🪙';
+      const f = frozen ? 0.3 + i * 0.09 : 0;
+      const x = from.x + (to.x - from.x) * f;
+      const y = from.y + (to.y - from.y) * f - Math.sin(f * Math.PI) * 90;
+      coin.style.left = `${x}px`;
+      coin.style.top = `${y}px`;
+      if (frozen) {
+        // Frozen mid-flight: no flight animation, or it would drift to the
+        // counter and fade to 0.15 opacity.
+        coin.style.animation = 'none';
+      } else {
+        coin.style.setProperty('--dx', `${to.x - from.x}px`);
+        coin.style.setProperty('--dy', `${to.y - from.y}px`);
+        coin.style.animationDelay = `${i * 0.07}s`;
+      }
+      this.coinsLayerEl.appendChild(coin);
+      setTimeout(() => coin.remove(), frozen ? 30000 : 1400);
+    }
   }
 
   showWork(label, progress) {

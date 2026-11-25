@@ -20,8 +20,23 @@ grab ingredients, chop, cook, plate, and serve before the timer runs out.
   (Mie + Telur + Sayur) • 🍢 Sate Ayam (Ayam + Tusuk + Kacang).
 - Serve fast in a row for a **combo bonus**; a fast serve also pays a speed
   bonus. Each day lasts 2:30 — every new day orders arrive faster.
-- **3 lives:** an expired order costs one heart. Lose all three and the
+- **3 lives:** an expired order costs one chili. Lose all three and the
   warung closes.
+- The warung is dressed for the night market: striped tarp roof, warm bulb
+  string, orange stove glow, a hand-painted WARUNG sign, kerupuk tin, sambal
+  jars, plastic stools and motorbikes parked in the dim street behind.
+- Each order is a paper ticket with the dish picture and its 3 ingredient
+  dots; the countdown is a bar that runs green → amber → red. The item you
+  carry shows in a speech bubble over the chef, and every station has a
+  floating icon label (🔪 Talenan, 🔥 Kompor, 🍽️ Piring, 🔔 Sajikan).
+- Serving pops a floating `+koin · KOMBO xN · SPEED BONUS` badge while gold
+  sparkles burst and coins fly to the coin counter. Steam rises from the wok
+  and embers dance over the flame while cooking.
+- The title screen is the warung itself: the chef waves, steam rises, the
+  recipes sit on banana leaves, and MULAI MASAK is one big chunky button.
+  Game over is a results card — stars, a rank (Pemula Dapur / Koki Andal /
+  Juragan Warung), dishes served per recipe, best combo, speed bonuses,
+  day reached — over the warung with its shutter pulled halfway down.
 
 ## Tech
 
@@ -29,8 +44,12 @@ grab ingredients, chop, cook, plate, and serve before the timer runs out.
   Three.js is vendored as `game/vendor/three.min.js`.
 - All sounds are synthesized with WebAudio — no audio files.
 - Deterministic screenshot scenes: `?shot=start|play|end&seed=N` plays the
-  real rules forward from a seeded RNG (title, mid-game with a dish
-  mid-assembly, game over).
+  real rules forward from a seeded RNG. `play` stages a busy Day 3 moment —
+  4 orders on the board, one flashing red under 10 seconds, caught at the
+  instant a dish is served (popup, sparkles, coins frozen mid-flight) with
+  the next dish mid-assembly; the combo is staged at x2 just before the
+  serve so the popup reads KOMBO x3. `end` serves two dishes first, then
+  lets orders expire until the warung closes.
 
 ## Run it
 

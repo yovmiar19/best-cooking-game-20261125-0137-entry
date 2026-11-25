@@ -4,7 +4,7 @@ export const GAME = {
   title: 'Sizzle & Serve: Warung Rush',
   dayLengthSeconds: 150,
   startLives: 3,
-  orderSlots: 3,
+  orderSlots: 4,
   firstOrderDelay: 2,
   orderGapMin: 4,
   orderGapMax: 9,

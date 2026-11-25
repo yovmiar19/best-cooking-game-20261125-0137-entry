@@ -118,7 +118,7 @@ export function buildBoard(station) {
   const knife = box(0.45, 0.03, 0.08, 0xcfd8dc, 0.25, 1.02, 0.15);
   knife.rotation.y = 0.5;
   g.add(knife);
-  g.add(makeLabelSprite(station.label, 0xd7a86e));
+  g.add(makeLabelSprite('🔪 TALENAN', 0xd7a86e));
   g.position.set(station.x, 0, station.z);
   g.userData.stationId = station.id;
   return g;
@@ -147,7 +147,7 @@ export function buildStove(station) {
   flame.visible = false;
   flame.name = 'flame';
   g.add(flame);
-  g.add(makeLabelSprite(station.label, 0xff8c1a));
+  g.add(makeLabelSprite('🔥 KOMPOR', 0xff8c1a));
   g.position.set(station.x, 0, station.z);
   g.userData.stationId = station.id;
   return g;
@@ -164,7 +164,7 @@ export function buildPlateStation(station) {
   rim.rotation.x = Math.PI / 2;
   rim.position.y = 1.02;
   g.add(rim);
-  g.add(makeLabelSprite(station.label, 0xffffff));
+  g.add(makeLabelSprite('🍽️ PIRING', 0xffffff));
   g.position.set(station.x, 0, station.z);
   g.userData.stationId = station.id;
   return g;
@@ -179,7 +179,7 @@ export function buildServeWindow(station) {
   g.add(box(1.3, 0.06, 0.8, 0xf5e6c8, 0, 0.93, 0.1));
   const bell = sph(0.12, 0xffd54f, 0.45, 1.05, 0.2);
   g.add(bell);
-  g.add(makeLabelSprite(station.label, 0xffd54f));
+  g.add(makeLabelSprite('🔔 SAJIKAN', 0xffd54f));
   g.position.set(station.x, 0, station.z);
   g.userData.stationId = station.id;
   return g;
