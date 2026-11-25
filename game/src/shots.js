@@ -56,9 +56,10 @@ function stageStart(game) {
   return { screen: SCREEN_TITLE, best: 0 };
 }
 
-// Play scene: real orders, real cooking — end with a Nasi Goreng 2/3 on the
-// plate (rice cooked + egg cooked, kecap still to come), one order on the
-// board, timer running, a plate ready to be finished.
+// Play scene: real orders, real cooking — end with a finished Nasi Goreng
+// (3/3) on the plate, ready to serve, while the chef carries noodles for
+// the next order, so the frame shows both a plate ready to serve and a dish
+// mid-assembly. One order on the board, timer running.
 function stagePlay(game) {
   game.screen = SCREEN_PLAY;
   game.hud.hideOverlays();
@@ -67,10 +68,13 @@ function stagePlay(game) {
   // Cook rice, then egg, and put both on the plate.
   cookOneIngredient(game, STATIONS.pantryRice, STATIONS.stove);
   cookOneIngredient(game, STATIONS.pantryEgg, STATIONS.stove);
-  // Grab the final kecap and walk it toward the plate, so the frame shows
-  // the chef carrying the last ingredient with a dish mid-assembly (2/3).
+  // Grab the final kecap and place it on the plate: Nasi Goreng 3/3,
+  // ready to serve.
   doStation(game, STATIONS.pantrySauce);
-  walkTo(game, STATIONS.plate, 1.0);
+  doStation(game, STATIONS.plate);
+  // Start the next dish: pick up noodles for the Mie Goreng order, so the
+  // chef is carrying the next dish mid-assembly.
+  doStation(game, STATIONS.pantryNoodles);
   // Let the clock run a little so the order timers show pressure.
   waitSeconds(game, 2);
   game.hud.renderOrders(game.board.orders, game.plate);
